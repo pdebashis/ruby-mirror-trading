@@ -1,1 +1,0 @@
-jruby bin/run.rb
