@@ -135,6 +135,7 @@ class Feeder
       d={
         type: json_obj["type"],
         account: json_obj["data"]["account_id"],
+        order_id: json_obj["data"]["order_id"],
         status: json_obj["data"]["status"],
         exchange: json_obj["data"]["exchange"],
         o_time: json_obj["data"]["order_timestamp"],
