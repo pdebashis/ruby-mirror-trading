@@ -102,7 +102,7 @@ class StrategyMirror
       api_usr.cancel_order(id_to_cancel) unless id_to_cancel.nil?
       usr[o_id] = nil
       
-      reporting "COPY,#{usr[:id]},CANCELLED,,,,,#{symbol},,#{o_type},#{t_type},,,#{lot_size},#{price},#{trigger_price}" unless id_to_cancel.nil?
+      reporting "COPY,#{usr[:id]},CANCELLED,,,,,#{symbol},,#{o_type},#{t_type},,,,#{price},#{trigger_price}" unless id_to_cancel.nil?
     end
 
   end
