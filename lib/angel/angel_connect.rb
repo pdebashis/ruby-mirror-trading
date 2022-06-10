@@ -288,7 +288,7 @@ class AngelConnect
   def cancel_order(order_id)
     resp = delete("api.order.cancel", {
       variety: "regular",
-      order_id: order_id
+      orderid: order_id
     })
 
     if resp && order_id = resp["order_id"]

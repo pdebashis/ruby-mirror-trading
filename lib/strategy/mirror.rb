@@ -56,7 +56,7 @@ class StrategyMirror
     end
 
     if status == "CANCELLED" and validity == "DAY" and algo_switch == "ON" and type == "LIMIT"
-      cancel_order symbol,t_type,type,product,price,trigger_price,o_id
+      cancel_order symbol,t_type,type,price,trigger_price,o_id
     end
 
     # if status == "UPDATE" and validity == "DAY" and algo_switch == "ON" and type == "LIMIT"
@@ -94,7 +94,7 @@ class StrategyMirror
 
   end
 
-  def cancel_order symbol,t_type,type,product,price,trigger_price,o_id
+  def cancel_order symbol,t_type,o_type,price,trigger_price,o_id
     @logger.info "Cancelling Order #{o_id}"
     @users.each do |usr|
       api_usr = usr[:api]
