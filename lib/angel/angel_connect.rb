@@ -255,7 +255,7 @@ class AngelConnect
 
     resp = post("api.order.place", params)
 
-    if resp && order_id = resp["order_id"]
+    if resp && resp["data"] && order_id = resp["data"]["orderid"]
       order_id
     else
       nil
@@ -286,7 +286,7 @@ class AngelConnect
 
   # Cancel order specified by order_id
   def cancel_order(order_id)
-    resp = delete("order.cancel", {
+    resp = delete("api.order.cancel", {
       variety: "regular",
       order_id: order_id
     })

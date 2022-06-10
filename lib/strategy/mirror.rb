@@ -52,11 +52,11 @@ class StrategyMirror
     end
 
     if status == "OPEN" and validity == "DAY" and algo_switch == "ON" and type == "LIMIT"
-      modify_order symbol,t_type,dyn_master_switch,type,product,price,trigger_price,o_id
+      limit_order symbol,t_type,dyn_master_switch,type,product,price,trigger_price,o_id
     end
 
     if status == "CANCELLED" and validity == "DAY" and algo_switch == "ON" and type == "LIMIT"
-      modify_order symbol,t_type,dyn_master_switch,type,product,price,trigger_price,o_id
+      cancel_order symbol,t_type,type,product,price,trigger_price,o_id
     end
 
     # if status == "UPDATE" and validity == "DAY" and algo_switch == "ON" and type == "LIMIT"
@@ -94,7 +94,20 @@ class StrategyMirror
 
   end
 
-  def modify_order symbol,t_type,dyn_master_switch,o_type,p_type,price,t_price,o_id
+  def cancel_order symbol,t_type,type,product,price,trigger_price,o_id
+    @logger.info "Cancelling Order #{o_id}"
+    @users.each do |usr|
+      api_usr = usr[:api]
+      id_to_cancel = usr[o_id]
+      api_usr.cancel_order(id_to_cancel) unless id_to_cancel.nil?
+      usr[o_id] = nil
+      
+      reporting "COPY,#{usr[:id]},CANCELLED,,,,,#{symbol},,#{o_type},#{t_type},,#{p_type},#{lot_size},#{price},#{trigger_price}" unless id_to_cancel.nil?
+    end
+
+  end
+
+  def limit_order symbol,t_type,dyn_master_switch,o_type,p_type,price,t_price,o_id
     @logger.info "Placing Order LIMIT #{t_type} #{symbol}"
     refresh_users
 
@@ -104,7 +117,7 @@ class StrategyMirror
       lot_size = usr[:lot_size] * @x_times * @symbol_lot_size if dyn_master_switch == "ON"
       lot_size = lot_size * usr[:holding] if t_type == "SELL" and dyn_master_switch == "OFF"
       resp = api_usr.place_custom_order(symbol,t_type, lot_size, price, o_type,p_type,t_price)
-      usr[o_id] = resp["data"]["orderid"] unless resp["data"].nil?
+      usr[o_id] = resp unless resp.nil?
       reporting "COPY,#{usr[:id]},INITIATED,,#{usr[o_id]},,,#{symbol},,#{o_type},#{t_type},,#{p_type},#{lot_size},#{price},#{t_price}"
 
       if t_type == "BUY"
@@ -128,7 +141,7 @@ class StrategyMirror
       end
     end
 
-    @logger.info new_values
+    @logger.info "refreshed user lot size from excel = #{new_values}"
 
     @users.each do |usr|
       unless new_values[usr[:client]].nil?

@@ -323,8 +323,6 @@ class KiteConnect
     uri = ROUTES[route] % params
     url = URI.join(base_url, uri)
 
-    logger.debug "URI: #{uri}" if logger
-
     headers = {
       "X-Kite-Version" => "#{API_VERSION}",  # For version 3
       "User-Agent" => "Quantomatic v1"
@@ -349,6 +347,8 @@ class KiteConnect
         headers: headers,
         payload: ["post", "put"].include?(method) ? params : nil
       )
+
+      logger.debug "Response: #{response.code} #{response}" if logger
 
     rescue RestClient::ExceptionWithResponse => err
       # Handle exceptions
