@@ -51,11 +51,11 @@ class StrategyMirror
       place_order symbol,t_type,dyn_master_switch,type,product
     end
 
-    if status == "OPEN" and validity == "DAY" and algo_switch == "ON" and type == "LIMIT"
+    if status == "OPEN" and validity == "DAY" and algo_switch == "ON" and (type == "LIMIT" or type == "SL")
       limit_order symbol,t_type,dyn_master_switch,type,product,price,trigger_price,o_id
     end
 
-    if status == "CANCELLED" and validity == "DAY" and algo_switch == "ON" and type == "LIMIT"
+    if status == "CANCELLED" and validity == "DAY" and algo_switch == "ON" and (type == "LIMIT" or type == "SL")
       cancel_order symbol,t_type,type,price,trigger_price,o_id
     end
 

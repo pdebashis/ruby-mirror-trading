@@ -263,19 +263,19 @@ class AngelConnect
   def modify_order(order_id, quantity = nil, order_type = nil, price = nil,
                    trigger_price = nil, validity = nil, disclosed_quantity = nil, variety = nil)
     params = {}
-    params[:variety] = variety || "NORMAL" # regular, bo, co, amo
+    params[:variety] = variety || "NORMAL" # NORMAL, bo, co, amo
     params[:orderid] = order_id
     params[:ordertype] = order_type # MARKET, LIMIT, SL, SL-M
     params[:producttype] = "INTRADAY"
     params[:duration] = validity if validity
     params[:price] = price if price # For limit orders
     params[:quantity] = quantity.to_i if quantity
-    params[:tradingsymbol] = "X"
-    params[:symboltoken] = "X"
+    params[:tradingsymbol] = nil
+    params[:symboltoken] = nil
     params[:exchange] = "NSE"
     params[:triggerprice] = trigger_price if trigger_price
 
-#     "variety":"NORMAL",
+# "variety":"NORMAL",
 # "orderid":"201020000000080",
 # "ordertype":"LIMIT",
 # "producttype":"INTRADAY",
@@ -286,7 +286,7 @@ class AngelConnect
 # "symboltoken":"3045",
 # "exchange":"NSE"
 
-    resp = put("api.order.modify", params)
+    resp = post("api.order.modify", params)
 
     if resp && order_id = resp["order_id"]
       order_id
@@ -415,6 +415,8 @@ class AngelConnect
         headers: headers,
         payload: ["post", "put"].include?(method) ? params.to_json : nil
       )
+
+      logger.debug "Response: #{response.code} #{response}" if logger
 
     rescue RestClient::ExceptionWithResponse => err
       # Handle exceptions
