@@ -275,7 +275,7 @@ class AngelConnect
     params[:validity] = validity if validity
     params[:disclosed_quantity] = disclosed_quantity if disclosed_quantity
 
-    resp = put("order.modify", params)
+    resp = put("api.order.modify", params)
 
     if resp && order_id = resp["order_id"]
       order_id
