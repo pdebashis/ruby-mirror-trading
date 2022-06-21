@@ -250,9 +250,6 @@ class AngelConnect
     params[:squareoff] = 0
     params[:stoploss] = 0
 
-    logger.info "placing order"
-    logger.info params
-
     resp = post("api.order.place", params)
 
     if resp && resp["data"] && order_id = resp["data"]["orderid"]
@@ -266,14 +263,28 @@ class AngelConnect
   def modify_order(order_id, quantity = nil, order_type = nil, price = nil,
                    trigger_price = nil, validity = nil, disclosed_quantity = nil, variety = nil)
     params = {}
-    params[:variety] = variety || "regular" # regular, bo, co, amo
-    params[:order_id] = order_id
-    params[:quantity] = quantity.to_i if quantity
-    params[:order_type] = order_type # MARKET, LIMIT, SL, SL-M
+    params[:variety] = variety || "NORMAL" # regular, bo, co, amo
+    params[:orderid] = order_id
+    params[:ordertype] = order_type # MARKET, LIMIT, SL, SL-M
+    params[:producttype] = "INTRADAY"
+    params[:duration] = validity if validity
     params[:price] = price if price # For limit orders
-    params[:trigger_price] = trigger_price if trigger_price
-    params[:validity] = validity if validity
-    params[:disclosed_quantity] = disclosed_quantity if disclosed_quantity
+    params[:quantity] = quantity.to_i if quantity
+    params[:tradingsymbol] = "X"
+    params[:symboltoken] = "X"
+    params[:exchange] = "NSE"
+    params[:triggerprice] = trigger_price if trigger_price
+
+#     "variety":"NORMAL",
+# "orderid":"201020000000080",
+# "ordertype":"LIMIT",
+# "producttype":"INTRADAY",
+# "duration":"DAY",
+# "price":"194.00",
+# "quantity":"1",
+# "tradingsymbol":"SBIN-EQ",
+# "symboltoken":"3045",
+# "exchange":"NSE"
 
     resp = put("api.order.modify", params)
 
@@ -404,8 +415,6 @@ class AngelConnect
         headers: headers,
         payload: ["post", "put"].include?(method) ? params.to_json : nil
       )
-
-      logger.debug "Response: #{response.code} #{response}" if logger
 
     rescue RestClient::ExceptionWithResponse => err
       # Handle exceptions

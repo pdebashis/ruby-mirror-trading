@@ -348,8 +348,6 @@ class KiteConnect
         payload: ["post", "put"].include?(method) ? params : nil
       )
 
-      logger.debug "Response: #{response.code} #{response}" if logger
-
     rescue RestClient::ExceptionWithResponse => err
       # Handle exceptions
       response = err.response

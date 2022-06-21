@@ -60,7 +60,7 @@ class StrategyMirror
     end
 
     if status == "UPDATE" and validity == "DAY" and algo_switch == "ON" and type == "LIMIT"
-      modify_order dyn_master_switch,type,price,trigger_price,o_id
+      modify_order symbol,t_type,dyn_master_switch,type,product,price,trigger_price,o_id
     end
 
     # if status == "UPDATE" and validity == "DAY" and algo_switch == "ON" and type == "LIMIT"
@@ -134,8 +134,8 @@ class StrategyMirror
 
   end
 
-  def modify_order dyn_master_switch,o_type,price,t_price,o_id
-    @logger.info "Placing Order LIMIT #{t_type} #{symbol}"
+  def modify_order symbol,t_type,dyn_master_switch,o_type,p_type,price,t_price,o_id
+    @logger.info "Modifying Order #{o_type} #{t_type} #{symbol}"
     refresh_users
 
     @users.each do |usr|
