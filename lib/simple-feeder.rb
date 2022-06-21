@@ -150,7 +150,7 @@ class Feeder
         price: json_obj["data"]["price"],
         trigger_price: json_obj["data"]["trigger_price"]
       }
-      @display.append "#{d[:status]}\t#{d[:t_symbol]}\t#{d[:order_type]}\t#{d[:t_type]}\n"
+      @display.append "#{d[:status]}\t#{d[:t_symbol]}\t#{d[:order_type]}\t#{d[:t_type]}\t#{d[:price]}\n"
 
       emit dict: d
     end

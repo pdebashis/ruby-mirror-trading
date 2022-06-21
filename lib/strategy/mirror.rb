@@ -59,10 +59,6 @@ class StrategyMirror
       cancel_order symbol,t_type,type,price,trigger_price,o_id
     end
 
-    if status == "UPDATE" and validity == "DAY" and algo_switch == "ON" and type == "LIMIT"
-      modify_order symbol,t_type,dyn_master_switch,type,product,price,trigger_price,o_id
-    end
-
     # if status == "UPDATE" and validity == "DAY" and algo_switch == "ON" and type == "LIMIT"
     #   modify_order symbol,t_type,dyn_master_switch,type,product,price,trigger_price,o_id
     # end
@@ -106,6 +102,7 @@ class StrategyMirror
       api_usr.cancel_order(id_to_cancel) unless id_to_cancel.nil?
       usr[o_id] = nil
       
+      #USR[:holding] not updated for cancel order 
       reporting "COPY,#{usr[:id]},CANCELLED,,#{id_to_cancel},,,#{symbol},,#{o_type},#{t_type},,,,#{price},#{trigger_price}" unless id_to_cancel.nil?
     end
 
@@ -116,36 +113,25 @@ class StrategyMirror
     refresh_users
 
     @users.each do |usr|
-      next if usr[o_id]
       api_usr = usr[:api]
       lot_size = usr[:lot_size] * @symbol_lot_size
       lot_size = usr[:lot_size] * @x_times * @symbol_lot_size if dyn_master_switch == "ON"
       lot_size = lot_size * usr[:holding] if t_type == "SELL" and dyn_master_switch == "OFF"
-      resp = api_usr.place_custom_order(symbol,t_type, lot_size, price, o_type,p_type,t_price)
-      usr[o_id] = resp unless resp.nil?
-      reporting "COPY,#{usr[:id]},INITIATED,,#{usr[o_id]},,,#{symbol},,#{o_type},#{t_type},,#{p_type},#{lot_size},#{price},#{t_price}"
+
+      if usr[o_id]
+        api_usr.modify_order(usr[o_id], lot_size, o_type,price,t_price)
+        reporting "COPY,#{usr[:id]},UPDATED,,#{usr[o_id]},,,#{symbol},,#{o_type},#{t_type},,#{p_type},#{lot_size},#{price},#{t_price}"
+      else
+        resp = api_usr.place_custom_order(symbol,t_type, lot_size, price, o_type,p_type,t_price)
+        usr[o_id] = resp unless resp.nil?
+        reporting "COPY,#{usr[:id]},INITIATED,,#{usr[o_id]},,,#{symbol},,#{o_type},#{t_type},,#{p_type},#{lot_size},#{price},#{t_price}"
+      end
 
       if t_type == "BUY"
         usr[:holding] += 1
       elsif t_type == "SELL"
         usr[:holding] = 0
       end
-    end
-
-  end
-
-  def modify_order symbol,t_type,dyn_master_switch,o_type,p_type,price,t_price,o_id
-    @logger.info "Modifying Order #{o_type} #{t_type} #{symbol}"
-    refresh_users
-
-    @users.each do |usr|
-      next unless usr[o_id]
-      api_usr = usr[:api]
-      lot_size = usr[:lot_size] * @symbol_lot_size
-      lot_size = usr[:lot_size] * @x_times * @symbol_lot_size if dyn_master_switch == "ON"
-      lot_size = lot_size * usr[:holding] if t_type == "SELL" and dyn_master_switch == "OFF"
-      resp = api_usr.modify_order(usr[o_id], lot_size, o_type,price,t_price)
-      reporting "COPY,#{usr[:id]},UPDATE,,#{usr[o_id]},,,#{symbol},,#{o_type},#{t_type},,#{p_type},#{lot_size},#{price},#{t_price}"
     end
 
   end
