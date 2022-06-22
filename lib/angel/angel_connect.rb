@@ -261,7 +261,12 @@ class AngelConnect
 
   # Modify an order specified by order_id
   def modify_order(order_id, quantity = nil, order_type = nil, price = nil,
-                   trigger_price = nil, validity = nil, disclosed_quantity = nil, variety = nil)
+                   trigger_price = nil,tradingsymbol=nil, validity = nil, disclosed_quantity = nil, variety = nil)
+
+    record = get_angel_symbol_token tradingsymbol
+
+    @logger.info "Angel Daily Data Match = #{record}"
+
     params = {}
     params[:variety] = variety || "NORMAL" # NORMAL, bo, co, amo
     params[:orderid] = order_id
@@ -270,8 +275,8 @@ class AngelConnect
     params[:duration] = validity if validity
     params[:price] = price if price # For limit orders
     params[:quantity] = quantity.to_i if quantity
-    params[:tradingsymbol] = nil
-    params[:symboltoken] = nil
+    params[:tradingsymbol] = record["symbol"]
+    params[:symboltoken] = record["token"]
     params[:exchange] = "NSE"
     params[:triggerprice] = trigger_price if trigger_price
 

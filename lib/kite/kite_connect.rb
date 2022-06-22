@@ -219,7 +219,7 @@ class KiteConnect
 
   # Modify an order specified by order_id
   def modify_order(order_id, quantity = nil, order_type = nil, price = nil,
-                   trigger_price = nil, validity = nil, disclosed_quantity = nil, variety = nil)
+                   trigger_price = nil,symbol=nil, validity = nil, disclosed_quantity = nil, variety = nil)
     params = {}
     params[:variety] = variety || "regular" # regular, bo, co, amo
     params[:order_id] = order_id
