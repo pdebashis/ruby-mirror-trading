@@ -280,20 +280,9 @@ class AngelConnect
     params[:exchange] = "NSE"
     params[:triggerprice] = trigger_price if trigger_price
 
-# "variety":"NORMAL",
-# "orderid":"201020000000080",
-# "ordertype":"LIMIT",
-# "producttype":"INTRADAY",
-# "duration":"DAY",
-# "price":"194.00",
-# "quantity":"1",
-# "tradingsymbol":"SBIN-EQ",
-# "symboltoken":"3045",
-# "exchange":"NSE"
-
     resp = post("api.order.modify", params)
 
-    if resp && order_id = resp["order_id"]
+    if resp && resp["data"] && order_id = resp["data"]["orderid"]
       order_id
     else
       nil
@@ -421,6 +410,7 @@ class AngelConnect
         payload: ["post", "put"].include?(method) ? params.to_json : nil
       )
 
+      logger.debug "Parameters: #{params}" if logger
       logger.debug "Response: #{response.code} #{response}" if logger
 
     rescue RestClient::ExceptionWithResponse => err
