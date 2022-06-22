@@ -266,12 +266,19 @@ class AngelConnect
     record = get_angel_symbol_token tradingsymbol
 
     @logger.info "Angel Daily Data Match = #{record}"
+    product_type_angel = product_type == "MIS" ? "INTRADAY" : "CARRYFORWARD"
+    order_type_angel = case order_type
+    when "MARKET" then "MARKET"
+    when "LIMIT" then "LIMIT"
+    when "SL" then "STOPLOSS_LIMIT"
+    else 2
+    end
 
     params = {}
     params[:variety] = variety || "NORMAL" # NORMAL, bo, co, amo
     params[:orderid] = order_id
-    params[:ordertype] = order_type # MARKET, LIMIT, SL, SL-M
-    params[:producttype] = "INTRADAY"
+    params[:ordertype] = order_type_angel # MARKET, LIMIT, SL, SL-M
+    params[:producttype] = product_type_angel
     params[:duration] = validity if validity
     params[:price] = price if price # For limit orders
     params[:quantity] = quantity.to_i if quantity
