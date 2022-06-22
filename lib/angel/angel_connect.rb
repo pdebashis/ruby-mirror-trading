@@ -279,13 +279,13 @@ class AngelConnect
     params[:orderid] = order_id
     params[:ordertype] = order_type_angel # MARKET, LIMIT, SL, SL-M
     params[:producttype] = product_type_angel
-    params[:duration] = validity if validity
+    params[:duration] = "DAY"
     params[:price] = price if price # For limit orders
     params[:quantity] = quantity.to_i if quantity
-    params[:tradingsymbol] = record["name"]
+    params[:tradingsymbol] = record["symbol"]
     params[:symboltoken] = record["token"]
     params[:exchange] = "NSE"
-    params[:triggerprice] = trigger_price if trigger_price
+    #params[:triggerprice] = trigger_price if trigger_price
 
     resp = post("api.order.modify", params)
 
