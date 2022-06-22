@@ -261,7 +261,7 @@ class AngelConnect
 
   # Modify an order specified by order_id
   def modify_order(order_id, quantity = nil, order_type = nil, price = nil,
-                   trigger_price = nil,tradingsymbol=nil, validity = nil, disclosed_quantity = nil, variety = nil)
+                   trigger_price = nil,tradingsymbol=nil,product_type=nil, validity = nil, disclosed_quantity = nil, variety = nil)
 
     record = get_angel_symbol_token tradingsymbol
 

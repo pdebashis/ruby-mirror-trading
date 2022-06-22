@@ -123,7 +123,7 @@ class StrategyMirror
       lot_size = lot_size * usr[:holding] if t_type == "SELL" and dyn_master_switch == "OFF"
 
       if usr[o_id]
-        api_usr.modify_order(usr[o_id], lot_size, o_type,price,t_price,symbol)
+        api_usr.modify_order(usr[o_id], lot_size, o_type,price,t_price,symbol,p_type)
         reporting "COPY,#{usr[:id]},UPDATED,,#{usr[o_id]},,,#{symbol},,#{o_type},#{t_type},,#{p_type},#{lot_size},#{price},#{t_price}"
       else
         resp = api_usr.place_custom_order(symbol,t_type, lot_size, price, o_type,p_type,t_price)
