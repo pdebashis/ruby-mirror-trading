@@ -282,7 +282,7 @@ class AngelConnect
     params[:duration] = validity if validity
     params[:price] = price if price # For limit orders
     params[:quantity] = quantity.to_i if quantity
-    params[:tradingsymbol] = record["symbol"]
+    params[:tradingsymbol] = record["name"]
     params[:symboltoken] = record["token"]
     params[:exchange] = "NSE"
     params[:triggerprice] = trigger_price if trigger_price
