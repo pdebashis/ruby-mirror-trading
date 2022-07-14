@@ -270,7 +270,7 @@ class AngelConnect
     order_type_angel = case order_type
     when "MARKET" then "MARKET"
     when "LIMIT" then "LIMIT"
-    when "SL" then "STOPLOSS_LIMIT"
+    when "SL" then "STOPLOSS_MARKET"
     else 2
     end
 
@@ -321,7 +321,7 @@ class AngelConnect
     order_type_angel = case order_type
     when "MARKET" then "MARKET"
     when "LIMIT" then "LIMIT"
-    when "SL" then "STOPLOSS_LIMIT"
+    when "SL" then "STOPLOSS_MARKET"
     else 2
     end
     place_order("NFO", tradingsymbol, transaction_type, quantity, product_type_angel, order_type_angel, price, trigger_price)

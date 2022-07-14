@@ -55,7 +55,7 @@ class StrategyMirror
       limit_order symbol,t_type,dyn_master_switch,type,product,price,trigger_price,o_id
     end
 
-    if status == "CANCELLED" and validity == "DAY" and algo_switch == "ON" and type == "LIMIT"
+    if status == "CANCELLED" and validity == "DAY" and algo_switch == "ON" and (type == "LIMIT" or type == "SL")
       cancel_order symbol,t_type,type,price,trigger_price,o_id
     end
 
@@ -81,6 +81,7 @@ class StrategyMirror
     refresh_users
 
     @users.each do |usr|
+      next if usr[:trade_flag] == "NO"
       api_usr = usr[:api]
       lot_size = usr[:lot_size] * @symbol_lot_size
       lot_size = usr[:lot_size] * @x_times * @symbol_lot_size if dyn_master_switch == "ON"
@@ -117,6 +118,7 @@ class StrategyMirror
     refresh_users
 
     @users.each do |usr|
+      next if usr[:trade_flag] == "NO"
       api_usr = usr[:api]
       lot_size = usr[:lot_size] * @symbol_lot_size
       lot_size = usr[:lot_size] * @x_times * @symbol_lot_size if dyn_master_switch == "ON"
