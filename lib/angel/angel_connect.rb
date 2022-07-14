@@ -247,8 +247,6 @@ class AngelConnect
     params[:duration] = "DAY"
     params[:quantity] = quantity.to_i
     params[:price] = price
-    params[:squareoff] = 0
-    params[:stoploss] = 0
     params[:triggerprice] = trigger_price || 0
     resp = post("api.order.place", params)
 
@@ -280,6 +278,7 @@ class AngelConnect
     end
 
     params = {}
+    params[:exchange] = "NFO"
     params[:variety] = variety_angel || "NORMAL" # NORMAL, bo, co, amo
     params[:orderid] = order_id
     params[:ordertype] = order_type_angel # MARKET, LIMIT, SL, SL-M
