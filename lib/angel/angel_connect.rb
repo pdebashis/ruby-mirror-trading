@@ -229,7 +229,7 @@ class AngelConnect
   #
   # Return order_id in case of success.
   def place_order(exchange, tradingsymbol, transaction_type, quantity, product,
-                  order_type, price = nil, trigger_price = nil, tag = nil, variety = nil)
+                  order_type, price = nil, trigger_price = nil, variety = nil, tag = nil )
 
     record = get_angel_symbol_token tradingsymbol
 
@@ -238,7 +238,7 @@ class AngelConnect
     params = {}
     exchange_type = exchange || "NSE"
     params[:exchange] = exchange_type
-    params[:variety] = "NORMAL"
+    params[:variety] = variety || "NORMAL"
     params[:tradingsymbol] = record["symbol"]
     params[:symboltoken] = record["token"]
     params[:transactiontype] = transaction_type
@@ -270,12 +270,17 @@ class AngelConnect
     order_type_angel = case order_type
     when "MARKET" then "MARKET"
     when "LIMIT" then "LIMIT"
-    when "SL" then "STOPLOSS_MARKET"
+    when "SL" then "STOPLOSS_LIMIT"
     else 2
     end
 
+    variety_angel = case order_type
+      when "SL" then "STOPLOSS"
+      else "NORMAL"
+    end
+
     params = {}
-    params[:variety] = variety || "NORMAL" # NORMAL, bo, co, amo
+    params[:variety] = variety_angel || "NORMAL" # NORMAL, bo, co, amo
     params[:orderid] = order_id
     params[:ordertype] = order_type_angel # MARKET, LIMIT, SL, SL-M
     params[:producttype] = product_type_angel
@@ -321,10 +326,14 @@ class AngelConnect
     order_type_angel = case order_type
     when "MARKET" then "MARKET"
     when "LIMIT" then "LIMIT"
-    when "SL" then "STOPLOSS_MARKET"
+    when "SL" then "STOPLOSS_LIMIT"
     else 2
     end
-    place_order("NFO", tradingsymbol, transaction_type, quantity, product_type_angel, order_type_angel, price, trigger_price)
+    variety_angel = case order_type
+      when "SL" then "STOPLOSS"
+      else "NORMAL"
+    end
+    place_order("NFO", tradingsymbol, transaction_type, quantity, product_type_angel, order_type_angel, price, trigger_price,variety_angel)
   end
 
   # Wrapper around modify_order to simplify modifying a regular CNC order
