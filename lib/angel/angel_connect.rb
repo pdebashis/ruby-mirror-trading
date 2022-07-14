@@ -249,7 +249,7 @@ class AngelConnect
     params[:price] = price
     params[:squareoff] = 0
     params[:stoploss] = 0
-
+    params[:triggerprice] = trigger_price || 0
     resp = post("api.order.place", params)
 
     if resp && resp["data"] && order_id = resp["data"]["orderid"]
@@ -290,7 +290,7 @@ class AngelConnect
     params[:tradingsymbol] = record["symbol"]
     params[:symboltoken] = record["token"]
     params[:exchange] = "NSE"
-    #params[:triggerprice] = trigger_price if trigger_price
+    params[:triggerprice] = trigger_price || 0
 
     resp = post("api.order.modify", params)
 
