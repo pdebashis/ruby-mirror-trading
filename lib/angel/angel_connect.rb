@@ -288,7 +288,6 @@ class AngelConnect
     params[:quantity] = quantity.to_i if quantity
     params[:tradingsymbol] = record["symbol"]
     params[:symboltoken] = record["token"]
-    params[:exchange] = "NSE"
     params[:triggerprice] = trigger_price || 0
 
     resp = post("api.order.modify", params)
