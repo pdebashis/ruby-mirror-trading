@@ -9,11 +9,11 @@ class StrategyMirror
     @logger = logger
     @report_name = Dir.pwd+"/reports/trades.csv"
     reporting "IDENTIFIER,USER,STATUS,MESSAGE,ORDER_ID,EXCHANGE,TIME,SYMBOL,INSTRUMENT,TYPE,TRANSACTION,VALIDITY,PRODUCT,QUANTITY,PRICE,TRIGGER-PRICE"
-    url = "https://margincalculator.angelbroking.com/OpenAPI_File/files/OpenAPIScripMaster.json"
-    resp = Net::HTTP.get_response(URI.parse(url))
-    @all_data = JSON.parse(resp.body)
-    @symbol_lot_size = 25
-    @x_times = 1
+    # url = "https://margincalculator.angelbroking.com/OpenAPI_File/files/OpenAPIScripMaster.json"
+    # resp = Net::HTTP.get_response(URI.parse(url))
+    # @all_data = JSON.parse(resp.body)
+    # @symbol_lot_size = 25
+    # @x_times = 1
   end
 
   def on_data dict
@@ -26,42 +26,41 @@ class StrategyMirror
     o_id = data[:order_id]
     acc = data[:account]
     status = data[:status]
-    msg = data[:message]
     exchange = data[:exchange]
     time = data[:o_time]
     symbol = data[:t_symbol]
     instrument = data[:t_instrument]
     type = data[:order_type]
     t_type = data[:t_type]
-    validity = data[:validity]
+    #validity = data[:validity]
     product = data[:product]
     quantity = data[:quantity]
     price = data[:price]
-    trigger_price = data[:trigger_price]
+    #trigger_price = data[:trigger_price]
 
-    find_symbol = @all_data.filter { |x| x["symbol"].match?(symbol) && x["lotsize"] != "-1"}.first
-    @symbol_lot_size = find_symbol["lotsize"].to_i unless find_symbol.nil?
-    @x_times = quantity/@symbol_lot_size
+    #find_symbol = @all_data.filter { |x| x["symbol"].match?(symbol) && x["lotsize"] != "-1"}.first
+    #@symbol_lot_size = find_symbol["lotsize"].to_i unless find_symbol.nil?
+    #@x_times = quantity/@symbol_lot_size
 
-    @logger.info "Master #{t_type} #{@x_times}x lotsize (#{@symbol_lot_size})"
+    # @logger.info "Master #{t_type} #{@x_times}x lotsize (#{@symbol_lot_size})"
+    @logger.info "Master #{type} #{t_type} #{@quantity}"
+    reporting "MASTER,#{acc},#{status},#{o_id},#{exchange},#{time},#{symbol},#{instrument},#{type},#{t_type},#{product},#{quantity},#{price}"
 
-    reporting "MASTER,#{acc},#{status},#{msg},#{o_id},#{exchange},#{time},#{symbol},#{instrument},#{type},#{t_type},#{validity},#{product},#{quantity},#{price},#{trigger_price}"
+    # if status == "OPEN" and validity == "DAY" and algo_switch == "ON" and type == "MARKET"
+    #   place_order symbol,t_type,dyn_master_switch,type,product
+    # end
 
-    if status == "OPEN" and validity == "DAY" and algo_switch == "ON" and type == "MARKET"
-      place_order symbol,t_type,dyn_master_switch,type,product
-    end
+    # if status == "OPEN" and validity == "DAY" and algo_switch == "ON" and type == "LIMIT"
+    #   limit_order symbol,t_type,dyn_master_switch,type,product,price,trigger_price,o_id
+    # end
 
-    if status == "OPEN" and validity == "DAY" and algo_switch == "ON" and type == "LIMIT"
-      limit_order symbol,t_type,dyn_master_switch,type,product,price,trigger_price,o_id
-    end
+    # if status == "CANCELLED" and validity == "DAY" and algo_switch == "ON" and (type == "LIMIT" or type == "SL")
+    #   cancel_order symbol,t_type,type,price,trigger_price,o_id
+    # end
 
-    if status == "CANCELLED" and validity == "DAY" and algo_switch == "ON" and (type == "LIMIT" or type == "SL")
-      cancel_order symbol,t_type,type,price,trigger_price,o_id
-    end
-
-    if status == "TRIGGER PENDING" and validity == "DAY" and algo_switch == "ON" and type == "SL"
-      limit_order symbol,t_type,dyn_master_switch,type,product,price,trigger_price,o_id
-    end
+    # if status == "TRIGGER PENDING" and validity == "DAY" and algo_switch == "ON" and type == "SL"
+    #   limit_order symbol,t_type,dyn_master_switch,type,product,price,trigger_price,o_id
+    # end
 
     # if status == "UPDATE" and validity == "DAY" and algo_switch == "ON" and type == "LIMIT"
     #   modify_order symbol,t_type,dyn_master_switch,type,product,price,trigger_price,o_id

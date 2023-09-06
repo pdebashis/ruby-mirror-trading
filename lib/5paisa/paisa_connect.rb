@@ -3,71 +3,42 @@ require 'digest'
 require 'csv'
 require 'rest-client'
 require 'json'
+require_relative 'payload.rb'
 
 # Kite Connect API wrapper class.
 # Initialize an instance for each Kite Connect user.
-class FyerConnect
+class PaisaConnect
 
   # Base URL
   # Can be overridden during initialization
-  BASE_URL = "https://api.fyers.in"
-  LOGIN_URL = "https://api.fyers.in/api/v2/generate-authcode?" # Default Login URL
-  REDIRECT_URL = "127.0.0.1:9000/sagar"
-  TIMEOUT = 10 # In seconds
+  BASE_URL = "https://Openapi.5paisa.com/VendorsAPI/Service1.svc/"
+  #LOGIN_ROUTE = f'{BaseUrl}V4/LoginRequestMobileNewbyEmail'
+  LOGIN_URL = "#{BASE_URL}TOTPLogin" # Default Login URL
+  TIMEOUT = 7 # In seconds
   API_VERSION = 3 # Use Kite API Version 3
-  BUY=1
-  SELL=-1
 
   # URIs for API calls
   # Not all API calls are currently implemented
   ROUTES = {
-    "api.token" => "/api/v2/validate-authcode",
+    "api.request" => "TOTPLogin",
+    "api.token" => "GetAccessToken",
     "api.token.invalidate" => "/session/token",
     "api.token.renew" => "/session/refresh_token",
-    "user.profile" => "/api/v2/profile",
-    "user.margins" => "/api/v2/funds",
-    "user.margins.segment" => "/user/margins/%{segment}",
+    "user.profile" => "/user/profile",
+    "user.margins" => "V4/Margin",
 
     "orders" => "/orders",
     "trades" => "/trades",
 
-    "order.info" => "/orders/%{order_id}",
-    "order.place" => "/api/v2/orders",
-    "order.modify" => "/orders/%{variety}/%{order_id}",
-    "order.cancel" => "/orders/%{variety}/%{order_id}",
+    "order.info" => "V2/OrderStatus",
+    "order.place" => "V1/PlaceOrderRequest",
+    "order.modify" => "V1/ModifyOrderRequest",
+    "order.cancel" => "V1/CancelOrderRequest",
+    
     "order.trades" => "/orders/%{order_id}/trades",
-
-    "portfolio.positions" => "/portfolio/positions",
-    "portfolio.holdings" => "/portfolio/holdings",
-    "portfolio.positions.convert" => "/portfolio/positions",
-
-    # MF api endpoints
-    "mf.orders" => "/mf/orders",
-    "mf.order.info" => "/mf/orders/%{order_id}",
-    "mf.order.place" => "/mf/orders",
-    "mf.order.cancel" => "/mf/orders/%{order_id}",
-
-    "mf.sips" => "/mf/sips",
-    "mf.sip.info" => "/mf/sips/%{sip_id}",
-    "mf.sip.place" => "/mf/sips",
-    "mf.sip.modify" => "/mf/sips/%{sip_id}",
-    "mf.sip.cancel" => "/mf/sips/%{sip_id}",
-
-    "mf.holdings" => "/mf/holdings",
-    "mf.instruments" => "/mf/instruments",
-
-    "market.instruments.all" => "/instruments",
-    "market.instruments" => "/instruments/%{exchange}",
-    "market.margins" => "/margins/%{segment}",
-    "market.historical" => "/instruments/historical/%{instrument_token}/%{interval}",
-    "market.trigger_range" => "/instruments/trigger_range/%{transaction_type}",
-
-    "market.quote" => "/quote",
-    "market.quote.ohlc" => "/quote/ohlc",
-    "market.quote.ltp" => "/quote/ltp",
   }
 
-  attr_accessor :api_key, :api_secret, :access_token, :redirect_url, :base_url,:timeout, :logger
+  attr_accessor :api_key, :client_code, :access_token, :base_url, :timeout, :logger
 
   # Initialize a new KiteConnect instance
   # - api_key is application's API key
@@ -76,9 +47,10 @@ class FyerConnect
   # - base_url is the API endpoint root. If it's not specified, then
   # default BASE_URL will be used as root.
   # - logger is an instance of Rails Logger or any other logger used
-  def initialize(api_key, logger = nil, base_url = nil, access_token = nil )
+  def initialize(api_key, client_code, logger = nil, access_token = nil, base_url = nil )
     self.api_key = api_key
-    self.access_token = 
+    self.access_token = access_token
+    self.client_code = client_code
     self.base_url = base_url || BASE_URL
     self.timeout = TIMEOUT
     self.logger = logger
@@ -87,7 +59,7 @@ class FyerConnect
   # Remote login url to which a user needs to be redirected in order to
   # initiate login flow.
   def login_url
-    return LOGIN_URL + "?client_id=#{api_key}&redirect_uri=#{redirect_url}"
+    return LOGIN_URL + "?v=#{API_VERSION}&api_key=#{api_key}"
   end
 
   # Setter method to set access_token
@@ -96,17 +68,25 @@ class FyerConnect
   end
 
   # Generate access_token by exchanging request_token
-  def generate_access_token(request_token, api_secret)
-    checksum = Digest::SHA256.hexdigest api_key.encode('utf-8') + ":" + api_secret.encode('utf-8')
-
-    resp = post("api.token", {
-      "grant_type" => "authorization_code",
-      "appIdHash" => checksum,
-      "code" => request_token
+  def generate_access_token(userid, totp, mpin, secret )
+    
+    request_token_resp = post("api.request", {
+      "Email_ID" => client_code.to_s,
+      "TOTP" => totp.to_s.gsub('x','0'),
+      "PIN" => mpin.to_s
     })
 
+    request_token = request_token_resp["RequestToken"] if request_token_resp && request_token_resp["RequestToken"]
+
+    resp = post("api.token", {
+      "RequestToken" => request_token,
+      "EncryKey" => secret,
+      "UserId" => userid
+    })
+
+    puts resp
     # Set access token if it's present in response
-    set_access_token(resp["access_token"]) if resp && resp["access_token"]
+    set_access_token(resp["AccessToken"]) if resp && resp["AccessToken"]
 
     return resp
   end
@@ -132,22 +112,20 @@ class FyerConnect
   end
 
   # Get account balance and margins for specific segment (defaults to equity)
-  def margins(segment = "equity")
-    if segment
-      get("user.margins", {segment: segment})
+  def margins()
+    resp = post("user.margins",{
+      "ClientCode" => client_code.to_s
+    })
+    if resp.nil?
+      false
     else
-      get("user.margins")
+      resp["EquityMargin"].first
     end
   end
 
   # Get list of today's orders - completed, pending and cancelled
   def orders
     get("orders")
-  end
-
-  # Get list of today's orders - completed, pending and cancelled
-  def mf_orders
-    get("mf.orders")
   end
 
   # Get history of individual order
@@ -185,37 +163,32 @@ class FyerConnect
   end
 
   # Place an order
-  # symbol       :"NSE:<instrument>",
-  # qty          :25*lotsize,
-  # type         :2         2->MARKET
-  # side         :1         1->BUY,-1->SELL
-  # productType  : CNC
-  # limitPrice   : 0
-  # stopPrice    : 0
-  # validity     : DAY
-  # disclosedQty : 0
-  # offlineOrder : False
-  # stopLoss     : 0
-  # takeProfit   : 0 
+  # - exchange : NSE / BSE
+  # - tradingsymbol is the symbol of the instrument
+  # - transaction_type BUY / SELL
+  # - quantity
+  # - product MIS / CNC
+  # - order_type MARKET / LIMIT / SL / SL-M
+  # - price used in LIMIT orders
+  # - trigger_price is the price at which an order should be triggered in case of SL / SL-M
+  # - tag alphanumeric (max 8 chars) used to tag an order
+  # - variety regular / bo / co / amo - defaults to regular
   #
   # Return order_id in case of success.
   def place_order(exchange, tradingsymbol, transaction_type, quantity, product,
                   order_type, price = nil, trigger_price = nil, tag = nil, variety = nil)
     params = {}
-    exchange_type = exchange || "NSE"
-    params[:symbol] = exchange_type + ":" + tradingsymbol
-    params[:side] = transaction_type
-    params[:qty] = quantity.to_i
-    params[:productType] = product || "CNC"
-    params[:type] = order_type
-    params[:limitPrice] = price || 0
-    params[:validity] = "DAY"
-    params[:offlineOrder] = "false"
-    params[:stopPrice] = price || 0
-    params[:disclosedQty] = 0
-    params[:stopLoss] = 0
-    params[:takeProfit] = 0
-    
+    params[:variety] = variety || "regular" # regular, bo, co, amo
+    params[:exchange] = exchange || "NSE"
+    params[:tradingsymbol] = tradingsymbol
+    params[:transaction_type] = transaction_type
+    params[:quantity] = quantity.to_i
+    params[:product] = product
+    params[:order_type] = order_type # MARKET, LIMIT, SL, SL-M
+    params[:price] = price if price # For limit orders
+    params[:trigger_price] = trigger_price if trigger_price
+    params[:tag] = tag if tag
+
     resp = post("order.place", params)
 
     if resp && order_id = resp["order_id"]
@@ -227,7 +200,7 @@ class FyerConnect
 
   # Modify an order specified by order_id
   def modify_order(order_id, quantity = nil, order_type = nil, price = nil,
-                   trigger_price = nil, validity = nil, disclosed_quantity = nil, variety = nil)
+                   trigger_price = nil,symbol=nil,product=nil, validity = nil, disclosed_quantity = nil, variety = nil)
     params = {}
     params[:variety] = variety || "regular" # regular, bo, co, amo
     params[:order_id] = order_id
@@ -264,24 +237,12 @@ class FyerConnect
   # CNC => Cash N Carry
   # Wrapper around place_order to simplify placing a regular CNC order
   def place_cnc_order(tradingsymbol, transaction_type, quantity, price, order_type = "LIMIT", trigger_price = nil)
-    transaction_type_fyer = transaction_type == "BUY" ? 1 : -1
-    order_type_fyer = order_type == "MARKET" ? 2 : 1
-    place_order("NSE", tradingsymbol, transaction_type_fyer, quantity, "INTRADAY", order_type_fyer, price, trigger_price)
+    place_order("NFO", tradingsymbol, transaction_type, quantity, "NRML", order_type, price, trigger_price)
   end
 
   def place_custom_order(tradingsymbol, transaction_type, quantity, price, order_type, product_type, trigger_price = nil)
-    transaction_type_fyer = transaction_type == "BUY" ? 1 : -1
-    order_type_fyer = case order_type
-    when "MARKET" then 2
-    when "LIMIT" then 1
-    when "SL" then 4
-    else 2
-    end
-    product_type_fyer = product_type == "MIS" ? "INTRADAY" : "MARGIN"
-    place_order("NSE", tradingsymbol, transaction_type_fyer, quantity, product_type_fyer, order_type_fyer, price, trigger_price)
+    place_order("NFO", tradingsymbol, transaction_type, quantity, product_type, order_type, price, trigger_price)
   end
-
-
 
   # Wrapper around modify_order to simplify modifying a regular CNC order
   def modify_cnc_order(order_id, quantity, price, order_type = "LIMIT", trigger_price = nil)
@@ -338,23 +299,25 @@ class FyerConnect
   # Make an HTTPS request
   def request(route, method, params = nil)
     params = params || {}
+    c_payload = {}
+    c_payload[:head] = if route == "api.token" or route == "api.request"
+      {"Key" => api_key}
+    else
+      {"key" => api_key}
+    end
+
+    c_payload[:body] = params
 
     # Retrieve route from ROUTES hash
     uri = ROUTES[route] % params
     url = URI.join(base_url, uri)
 
-    logger.debug "URI: #{uri}" if logger
-    logger.debug "PARAMS: #{params.to_json}" if logger
-
-    headers = {
-      "User-Agent" => "Quantomatic v1",
-      "Content-Type" => "application/json"
-    }
+    headers = HEADERS
 
     # Set auth_header if access_token is present
-    if api_key && access_token
-      auth_header = "#{api_key}:#{access_token}"
-      headers["Authorization"] = "#{auth_header}"
+    if access_token
+      headers['Cookie'] = COOKIE_CONST
+      headers['Authorization'] = "bearer #{access_token}"
     end
 
     # RestClient requires query params to be set in headers :-/
@@ -363,13 +326,26 @@ class FyerConnect
     end
 
     begin
+
+    a = {:url => url.to_s,
+    :headers => headers,
+    :payload => ["post", "put"].include?(method) ? c_payload.to_json : nil}
+    puts "============INPUT START===================="
+    puts a
+    puts "============INPUT END ======================"
+
       response = RestClient::Request.execute(
         url: url.to_s,
         method: method.to_sym,
         timeout: timeout,
         headers: headers,
-        payload: ["post", "put"].include?(method) ? params.to_json : nil
+        payload: ["post", "put"].include?(method) ? c_payload.to_json : nil
       )
+
+    puts "============RESPONSE START===================="
+    puts response
+    puts "============RESPONSE END ======================"
+    #logger.info response
 
     rescue RestClient::ExceptionWithResponse => err
       # Handle exceptions
@@ -391,14 +367,15 @@ class FyerConnect
     end
 
     case response.headers[:content_type]
-    when "application/json; charset=utf-8"
-      data = JSON.parse(response.body)
+    when "application/json"
+      data = JSON.parse(response.body)["body"]
     when "text/csv"
       data = CSV.parse(response.body, headers: true)
+    else
+      data = JSON.parse(response.body)["body"]
     end
-    
+
     return data
   end
 
 end
-

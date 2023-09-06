@@ -1,8 +1,6 @@
 *.gem
 *.rbc
-/config/config.yaml
-/config/master.yaml
-/config/clients.yaml
+/config/config.yml
 /coverage/
 /InstalledFiles
 /pkg/
