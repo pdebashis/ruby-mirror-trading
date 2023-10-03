@@ -1,7 +1,0 @@
-BUY
-
-{"ReqType":"T","ClientCode":"53570093","Exch":"N","ExchType":"D","ScripCode":44048,"Symbol":"BANKNIFTY 06 Sep 2023 PE 44800.00","Series":"PE","ExchOrderID":"1700000183318255","ExchTradeId":"621669532","ExchTradeTime":"2023-09-06 13:58:51","BuySell":"B","Qty":15,"Price":549.65,"PendingQty":0,"TotalTradedQty":15,"OrderQty":15,"OrderPrice":547.2,"RemoteOrderId":"5357009320230906015851450","Product":"D","ReqStatus":0,"Status":"Fully Executed","Remark":""}
-
-MODIFY
-
-{"ReqType"=>"M", "ClientCode"=>"53570093", "Exch"=>"N", "ExchType"=>"D", "ScripCode"=>44013, "Symbol"=>"BANKNIFTY 06 Sep 2023 CE 44100.00", "Series"=>"", "BrokerOrderID"=>933604693, "ExchOrderID"=>"1600000199912111", "ExchOrderTime"=>"2023-09-06 14:39:36", "BuySell"=>"S", "Qty"=>210, "Price"=>188, "ReqStatus"=>0, "Status"=>"Modified", "OrderRequestorCode"=>"53570093", "AtMarket"=>"N", "Product"=>"D", "WithSL"=>"Y", "SLTriggerRate"=>190, "DisclosedQty"=>0, "PendingQty"=>210, "TradedQty"=>0, "RemoteOrderId"=>"5357009320230906023936458", "Remark"=>""}

@@ -5,21 +5,7 @@ require 'rest-client'
 require 'json'
 
 class PaisaTicker
-  EXCHANGE_MAP = {
-        nse: 1,
-        nfo: 2,
-        cds: 3,
-        bse: 4,
-        bfo: 5,
-        bsecds: 6,
-        mcx: 7,
-        mcxsx: 8,
-        indices: 9
-  }
-
   ROOT_URI = "wss://openfeed.5paisa.com/Feeds/api/chat"
-
-  MODES = ["full","quote","ltp"]
 
   attr_accessor :socket_url, :logger, :client_code
 
@@ -30,15 +16,13 @@ class PaisaTicker
   end
 
   def make_sense(bin)
-    puts "Inside Make Sense #{bin.class.name}"
+    puts "Inside Make Sense"
+    logger.debug "Inside Make Sense #{bin.class.name}"
     case bin.class.name
-      when "String"
-        logger.debug "Non binary data received on socket"
-      when "Array"
-        logger.debug "Array data received on socket"
       when "WebSocket::Frame::Incoming::Client"
-        bin
+        bin.data
       else
+        logger.debug "Recieved other than WebSocket::Frame::Incoming::Client"
         logger.debug bin
         bin
     end

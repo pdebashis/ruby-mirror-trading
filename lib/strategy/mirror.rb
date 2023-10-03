@@ -7,13 +7,14 @@ class StrategyMirror
     on_value(&method(:on_data))
 
     @logger = logger
-    @report_name = Dir.pwd+"/reports/trades.csv"
-    reporting "IDENTIFIER,USER,STATUS,MESSAGE,ORDER_ID,EXCHANGE,TIME,SYMBOL,INSTRUMENT,TYPE,TRANSACTION,VALIDITY,PRODUCT,QUANTITY,PRICE,TRIGGER-PRICE"
-    # url = "https://margincalculator.angelbroking.com/OpenAPI_File/files/OpenAPIScripMaster.json"
-    # resp = Net::HTTP.get_response(URI.parse(url))
-    # @all_data = JSON.parse(resp.body)
-    # @symbol_lot_size = 25
-    # @x_times = 1
+    @report_name = Dir.pwd+"/logs/trades.log"
+    unless File.exist?(@report_name)
+      reporting "TIMESTAMP,IDENTIFIER,USER,STATUS,ORDER_ID,EXCHANGE,SYMBOL,INSTRUMENT,AT_MARKET,TRANSACTION,EXCHANGE_TYPE,QUANTITY,PRICE,TRIGGER-PRICE"
+    end
+    
+    @symbol_lot_size = 15
+    @x_times = 1
+   
   end
 
   def on_data dict
@@ -27,28 +28,33 @@ class StrategyMirror
     acc = data[:account]
     status = data[:status]
     exchange = data[:exchange]
-    time = data[:o_time]
+    exchange_type = data[:exchange_type]
     symbol = data[:t_symbol]
     instrument = data[:t_instrument]
-    type = data[:order_type]
+    at_market = data[:at_market]
     t_type = data[:t_type]
     #validity = data[:validity]
-    product = data[:product]
-    quantity = data[:quantity]
+    quantity = data[:quantity].to_i
     price = data[:price]
     #trigger_price = data[:trigger_price]
 
     #find_symbol = @all_data.filter { |x| x["symbol"].match?(symbol) && x["lotsize"] != "-1"}.first
     #@symbol_lot_size = find_symbol["lotsize"].to_i unless find_symbol.nil?
-    #@x_times = quantity/@symbol_lot_size
+    
+    if symbol.include? "BANKNIFTY"
+      @symbol_lot_size = 15 
+    else
+      @symbol_lot_size = 50
+    end
+    @x_times = quantity/@symbol_lot_size
 
     # @logger.info "Master #{t_type} #{@x_times}x lotsize (#{@symbol_lot_size})"
-    @logger.info "Master #{type} #{t_type} #{@quantity}"
-    reporting "MASTER,#{acc},#{status},#{o_id},#{exchange},#{time},#{symbol},#{instrument},#{type},#{t_type},#{product},#{quantity},#{price}"
+    @logger.info "Master recieved #{status} (market : #{at_market}) #{t_type} #{quantity} (lots multiplier : #{@x_times})"
+    reporting "MASTER,#{acc},#{status},#{o_id},#{exchange},#{symbol},#{instrument},#{at_market},#{t_type},#{exchange_type},#{quantity},#{price}"
 
-    # if status == "OPEN" and validity == "DAY" and algo_switch == "ON" and type == "MARKET"
-    #   place_order symbol,t_type,dyn_master_switch,type,product
-    # end
+    if status.upcase == "PLACED" and algo_switch == "ON" and at_market == "Y" and o_type == "P"
+      place_order symbol,instrument,t_type,dyn_master_switch,exchange_type
+    end
 
     # if status == "OPEN" and validity == "DAY" and algo_switch == "ON" and type == "LIMIT"
     #   limit_order symbol,t_type,dyn_master_switch,type,product,price,trigger_price,o_id
@@ -62,7 +68,7 @@ class StrategyMirror
     #   limit_order symbol,t_type,dyn_master_switch,type,product,price,trigger_price,o_id
     # end
 
-    # if status == "UPDATE" and validity == "DAY" and algo_switch == "ON" and type == "LIMIT"
+    # if status.upcase == "MODIFIED" and algo_switch == "ON" and o_type == "M"
     #   modify_order symbol,t_type,dyn_master_switch,type,product,price,trigger_price,o_id
     # end
 
@@ -70,30 +76,38 @@ class StrategyMirror
 
   def reporting msg
     date_format = Time.now.getlocal("+05:30").strftime("%Y-%m-%d %H:%M:%S")
-    File.open(@report_name,"a+") do |op|
-      op << "#{date_format},#{msg}\n"
+    if File.exist?(@report_name)
+      File.open(@report_name,"a+") do |op|
+        op << "#{date_format},#{msg}\n"
+      end
+    else
+      File.open(@report_name,"a+") do |op|
+        op << "#{msg}\n"
+      end
     end
   end
 
-  def place_order symbol,t_type,dyn_master_switch,o_type,p_type
-    @logger.info "Placing Order #{t_type} #{symbol}"
+  def place_order symbol,instrument,t_type,dyn_master_switch,e_type
     refresh_users
+    @logger.info "Placing Order #{t_type} #{symbol}"
 
     @users.each do |usr|
       next if usr[:trade_flag] == "NO"
       api_usr = usr[:api]
       lot_size = usr[:lot_size] * @symbol_lot_size
       lot_size = usr[:lot_size] * @x_times * @symbol_lot_size if dyn_master_switch == "ON"
-      lot_size = lot_size * usr[:holding] if t_type == "SELL" and dyn_master_switch == "OFF"
-      api_usr.place_custom_order(symbol,t_type, lot_size, 0, o_type,p_type,0)
+      lot_size = lot_size * usr[:holding] if t_type == "S" and dyn_master_switch == "OFF"
+      api_usr.place_custom_order(instrument,t_type, lot_size, e_type, 0, 0)
       
-      reporting "COPY,#{usr[:id]},INITIATED,,,,,#{symbol},,#{o_type},#{t_type},,#{p_type},#{lot_size},0,0"
+      reporting "COPY,#{usr[:name]},INITIATED,,,#{symbol},#{instrument},Y,#{t_type},#{e_type},#{lot_size},0,0"
 
-      if t_type == "BUY"
+      @logger.debug "Current holding #{usr[:holding]}"
+      if t_type == "B"
         usr[:holding] += 1
-      elsif t_type == "SELL"
+      elsif t_type == "S"
         usr[:holding] = 0
       end
+      @logger.debug "Updated holding #{usr[:holding]}"
     end
 
   end
@@ -132,11 +146,15 @@ class StrategyMirror
         reporting "COPY,#{usr[:id]},INITIATED,,#{usr[o_id]},,,#{symbol},,#{o_type},#{t_type},,#{p_type},#{lot_size},#{price},#{t_price}"
       end
 
+      @logger.debug "Update holding #{usr[:holding]}"
+
       if t_type == "BUY"
         usr[:holding] += 1
       elsif t_type == "SELL"
         usr[:holding] = 0
       end
+
+      @logger.debug "Updated holding #{usr[:holding]}"
     end
 
   end
@@ -148,17 +166,18 @@ class StrategyMirror
     workbook[0].each_with_index do |row,index|
       unless row.nil? or row[0].nil? or row[0].value.nil? or index <=2
         client = row[0].value
-        lot_size = row[7].value
+        lot_size = row[9].value
         new_values[client] = lot_size
       end
     end
 
-    @logger.info "refreshed user lot size from excel = #{new_values}"
+    @logger.info "refreshed users lot size from excel = #{new_values}"
 
     @users.each do |usr|
-      unless new_values[usr[:client]].nil?
-        usr[:lot_size] = new_values[usr[:client]]
+      unless new_values[usr[:client_code]].nil?
+        usr[:lot_size] = new_values[usr[:client_code]]
       end
     end
+    @logger.debug @users
   end
 end

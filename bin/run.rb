@@ -1,6 +1,4 @@
-require_relative './../lib/kite/kite_connect'
 require_relative './../lib/5paisa/paisa_connect'
-require_relative './../lib/kite/kite_ticker'
 require_relative './../lib/5paisa/paisa_ticker'
 require_relative './../lib/simple-feeder'
 require_relative './../lib/strategy/mirror'
@@ -24,7 +22,7 @@ def read_master_client workbook
       master[:totp] = row[5].value if row[5]
       master[:mpin] = row[6].value
       master[:userid] = row[7].value
-      master[:access_token] = row[8].value
+      master[:access_token] = row[8].value if row[8]
       break
     end
   end
@@ -46,7 +44,7 @@ def read_clients workbook
       client[:totp] = row[5].value if row[5]
       client[:mpin] = row[6].value
       client[:userid] = row[7].value
-      client[:access_token] = row[8].value
+      client[:access_token] = row[8].value if row[8]
       client[:holding] = 0
       client[:lot_size] = row[9].value
       client[:trade_flag] = row[10].value
@@ -58,6 +56,7 @@ end
 
 ### LOGS AND DISPLAY
 window = javax.swing.JFrame.new(__dir__)
+window.setDefaultCloseOperation(javax.swing.JFrame::EXIT_ON_CLOSE)
 window.setSize 500,600
 logs_area = javax.swing.JTextArea.new(20,10)
 scroll = javax.swing.JScrollPane.new(logs_area)
@@ -83,7 +82,7 @@ workbook = RubyXL::Parser.parse "#{Dir.pwd}/config/MirrorTradesystem.xlsx"
 
 master = read_master_client(workbook)
 API.info master
-broker_connect = PaisaConnect.new(master[:api_key],master[:client_code],API)
+broker_connect = PaisaConnect.new(master[:api_key],master[:client_code],master[:appsource],API)
 
 unless master[:access_token].nil?
   logs_area.append "Master login from saved token ...\n"
@@ -116,27 +115,27 @@ accounts=read_clients(workbook)
 
 accounts.each do |client|
   
-  broker_connect = PaisaConnect.new(client[:api_key],API)
+  broker_connect = PaisaConnect.new(client[:api_key],client[:client_code],client[:appsource],API)
 
   unless client[:access_token].nil?
     logs_area.append "Copy Account Saved Token ...\n"    
     broker_connect.set_access_token(client[:access_token])
     client[:api] = broker_connect
     copy_accounts << client
-    funds=broker_connect.margins["equity"]["available"]["live_balance"]
+    funds=broker_connect.margins["NetAvailableMargin"]
     logs_area.append "#{client[:name]} available fund = #{funds}\n"
   else
     next if client[:totp].nil?
     begin
       logs_area.append "#{client[:name]} Copy Account Fresh Login...\n"
       API.info "Using fresh login flow for #{client[:name]}" 
-      login_details=broker_connect.generate_access_token(client[:request_token], client[:api_secret])
+      login_details=broker_connect.generate_access_token(client[:userid], client[:totp], client[:mpin], client[:api_secret])
 
       API.info "#{client[:name]} Login Complete" 
       client[:access_token] = broker_connect.access_token
       client[:api] = broker_connect
       API.info broker_connect.access_token
-      funds=broker_connect.margins["equity"]["available"]["live_balance"]
+      funds=broker_connect.margins["NetAvailableMargin"]
       logs_area.append "#{client[:name]} available fund = #{funds}\n"
 
       #broker_connect.place_cnc_order("KOTAKBANK-EQ","BUY", 25, nil, "LIMIT") #######################################
@@ -150,10 +149,9 @@ end
 
 logs_area.append "\nValid Copy Accounts Count = #{copy_accounts.size}\n"
 
-# StrategyMirror.new(copy_accounts, feeder1, LOG1)
-
 paisa_ticker = PaisaTicker.new(master[:access_token],master[:client_code],API)
 feeder1 =  Feeder.new(paisa_ticker,API,logs_area)
+StrategyMirror.new(copy_accounts, feeder1, LOG1)
 feeder1.start
 
 logs_area.append "GG Well Played, Exiting in 10s...\n"
