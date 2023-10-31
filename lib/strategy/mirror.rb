@@ -12,7 +12,7 @@ class StrategyMirror
       reporting "TIMESTAMP,IDENTIFIER,USER,STATUS,ORDER_ID,EXCHANGE,SYMBOL,INSTRUMENT,AT_MARKET,TRANSACTION,EXCHANGE_TYPE,QUANTITY,PRICE,TRIGGER-PRICE"
     end
     
-    @symbol_lot_size = 15
+    @symbol_lot_size = 1
     @x_times = 1
    
   end
@@ -41,11 +41,6 @@ class StrategyMirror
     #find_symbol = @all_data.filter { |x| x["symbol"].match?(symbol) && x["lotsize"] != "-1"}.first
     #@symbol_lot_size = find_symbol["lotsize"].to_i unless find_symbol.nil?
     
-    if symbol.include? "BANKNIFTY"
-      @symbol_lot_size = 15 
-    else
-      @symbol_lot_size = 50
-    end
     @x_times = quantity/@symbol_lot_size
 
     # @logger.info "Master #{t_type} #{@x_times}x lotsize (#{@symbol_lot_size})"
