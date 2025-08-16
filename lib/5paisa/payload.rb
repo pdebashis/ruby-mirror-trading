@@ -1,5 +1,3 @@
-HEADERS = {'Content-Type'=> 'application/json'}
-
 GENERIC_PAYLOAD = {
     "head"=> {
         "key"=> "",

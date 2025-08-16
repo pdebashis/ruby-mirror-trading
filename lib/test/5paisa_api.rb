@@ -1,5 +1,7 @@
 require 'websocket-client-simple'
 require 'json'
+token = ".."
+client = ""
 socket_url = "wss://openfeed.5paisa.com/Feeds/api/chat?Value1=<token>|<client>"
 ws = WebSocket::Client::Simple.connect socket_url
 ws.on :open do puts "Connected" end

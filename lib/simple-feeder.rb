@@ -34,20 +34,20 @@ class Feeder
   
     def start
       @logger.info "Feeder Started with #{@ticker.socket_url}"
-      @display.append "Feeder Started...\n"
+      @display.append "Starting Feeder Loops...\n"
       sleep 2
 
       loop do
         return unless @ws.open?   
         
         sleep 60
-
-        @ws.send("Ping")
-        ###TEST####
+        @display.append "Feeder is Running...\n"
+        @ws.send("Ping")   # Or else connection will be auto-closed
+        # ##TEST####
         # buy_market = {"ReqType"=>"P", "ClientCode"=>"53570093", "Exch"=>"N", "ExchType"=>"D", "ScripCode"=>44576, "Symbol"=>"BANKNIFTY 13 Sep 2023 CE 47000.00", "Series"=>"", "BrokerOrderID"=>935005426, "ExchOrderID"=>"1500000068694778", "ExchOrderTime"=>"2023-09-11 13:44:19", "BuySell"=>"B", "Qty"=>15, "Price"=>0, "ReqStatus"=>0, "Status"=>"Placed", "OrderRequestorCode"=>"53570093", "AtMarket"=>"Y", "Product"=>"D", "WithSL"=>"N", "SLTriggerRate"=>0, "DisclosedQty"=>0, "PendingQty"=>15, "TradedQty"=>0, "RemoteOrderId"=>"5357009320230911014418525", "Remark"=>""}
         
         # self.fetch buy_market
-        ########### 
+        # ########## 
       end
     end
 

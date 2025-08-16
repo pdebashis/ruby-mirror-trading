@@ -3,7 +3,6 @@ require 'digest'
 require 'csv'
 require 'rest-client'
 require 'json'
-require_relative 'payload.rb'
 
 # Kite Connect API wrapper class.
 # Initialize an instance for each Kite Connect user.
@@ -13,6 +12,9 @@ class PaisaConnect
   # Can be overridden during initialization
   BASE_URL = "https://Openapi.5paisa.com/VendorsAPI/Service1.svc/"
   TIMEOUT = 5 # In seconds
+  HEADERS_BASE = {'Content-Type'=> 'application/json'}
+  SUBSCRIPTION_KEY="c89fab8d895a426d9e00db380b433027"
+  COOKIE_CONST="NSC_JOh0em50e1pajl5b5jvyafempnkehc3=ffffffffaf103e0c45525d5f4f58455e445a4a423660"
 
   # URIs for API calls
   # Not all API calls are currently implemented
@@ -52,7 +54,7 @@ class PaisaConnect
 
   # Generate access_token by exchanging request_token
   def generate_access_token(userid, totp, mpin, secret )
-    
+
     request_token_resp = post("api.request", {
       "Email_ID" => client_code.to_s,
       "TOTP" => totp.to_s.gsub('x','0'),
@@ -227,10 +229,10 @@ class PaisaConnect
     uri = ROUTES[route] % params
     url = URI.join(BASE_URL, uri)
 
-    headers = HEADERS
+    headers = HEADERS_BASE.dup
 
     # Set auth_header if access_token is present
-    if access_token
+    if self.access_token
       headers['Cookie'] = COOKIE_CONST
       headers['Authorization'] = "bearer #{access_token}"
     end
